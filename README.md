@@ -6,14 +6,26 @@ Cleans styling in EPUB ebooks.
 
 Many ebooks have terrible, obnoxious or unnecessary styling.
 
-For example: oversized margins, excessive line breaks, non-default fonts and 
+For example: oversized margins, excessive line breaks, non-default fonts and
 sizes, peculiar spacing.
 
-This is undesirable, because it distracts from the reading experience. It also
-overrides styling that has been optimised by ebook reading apps and user 
-settings.
+This is undesirable because it distracts from the reading experience.
 
 Thus, **reprint** tries to fix as much of this as possible.
+
+## Install
+
+**reprint** requires [Go](https://golang.org/doc/install) to be installed.
+
+```
+go get -u github.com/asavoy/reprint
+```
+
+To find out where **reprint** was installed, you can run
+`go list -f {{.Target}} github.com/asavoy/reprint`.
+
+For `reprint` to be used globally, add that directory to your `$PATH`
+environment var.
 
 ## Usage
 
@@ -26,16 +38,34 @@ reprint source.epub fixed.epub
 **Optimise for the Apple Books app**
 
 - Simply because it's the only app I use
+- Consider both iPhone and iPad
 
-**Replace styling with good defaults**
+**Remove custom styling, in favor of built-in defaults**
 
-- It's too hard to repair styles automatically
-- This assumes the content semantics are reasonable
+- The built-in styles have been optimised by the app and user settings, don't
+  override them
+- Assumes the content semantics are reasonable
+- Justified text is bad for readability
 
-**Preserve the metadata**
+**Add styling only when it improves readability**
 
-- It's necessary for library management
+- Tables and asides don't have built-in styling
+- Avoid page breaks between images and their captions
+
+**Fix common markup problems**
+
+- Use of `<br>` for spacing between paragraphs
+- Use of `<blockquote>` for unnecessary margins
+
+**Preserve metadata when needed for library management**
+
+- Don't bother with EPUB metadata that isn't utilised by apps
 
 **Don't optimise the ebook internals**
 
-- As long at the output works, the internals don't matter to the user
+- As long at the output works, the internals don't matter to the reader
+- Don't bother making stylesheets DRY
+
+**Try to be format independent**
+
+- To allow for expanding to other web-format sources in the future
