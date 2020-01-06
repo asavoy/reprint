@@ -5,8 +5,8 @@ import (
 	"github.com/asavoy/reprint/epub"
 )
 
-func Run(inFile, outFile string) error {
-	book, err := epub.Read(inFile)
+func Run(inPath, outPath string) error {
+	book, err := epub.Read(inPath)
 	if err != nil {
 		return err
 	}
@@ -14,7 +14,7 @@ func Run(inFile, outFile string) error {
 	if err != nil {
 		return err
 	}
-	err = epub.Write(outFile, book)
+	err = epub.Write(outPath, book)
 	if err != nil {
 		return err
 	}

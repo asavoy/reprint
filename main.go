@@ -2,26 +2,35 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
+	"path"
 
 	"github.com/asavoy/reprint/cmd"
 )
 
 func main() {
-	fmt.Println(os.Args)
-	switch os.Args[1] {
-	case "run":
-		err := cmd.Run(os.Args[2], os.Args[3])
-		if err != nil {
-			log.Fatal(err)
+	switch len(os.Args) {
+	case 1:
+		fmt.Printf("usage: %s source.epub [fixed.epub]\n", os.Args[0])
+	case 2:
+		inPath := os.Args[1]
+		outDir := path.Dir(inPath)
+		outFilename := fmt.Sprintf("%s.reprint.epub", path.Base(inPath))
+		outPath := path.Join(outDir, outFilename)
+		if inPath == outPath {
+			fmt.Println("error: inPath and outPath are the same!")
 		}
-	case "check":
-		err := cmd.Check(os.Args[2])
+		err := cmd.Run(inPath, outPath)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println("error:", err)
 		}
-	default:
-		log.Fatal("unexpected argument")
+	case 3:
+		inPath := os.Args[1]
+		outPath := os.Args[2]
+		fmt.Println("error: inPath and outPath are the same!")
+		err := cmd.Run(inPath, outPath)
+		if err != nil {
+			fmt.Println("error:", err)
+		}
 	}
 }

@@ -65,7 +65,3 @@ reprint source.epub fixed.epub
 
 - As long at the output works, the internals don't matter to the reader
 - Don't bother making stylesheets DRY
-
-**Try to be format independent**
-
-- To allow for expanding to other web-format sources in the future

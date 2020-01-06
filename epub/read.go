@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"path"
 	"strconv"
 
@@ -41,7 +42,10 @@ func Read(filepath string) (book.Book, error) {
 	if err != nil {
 		return book.Book{}, err
 	}
-	resources := parseResources(pack.Manifest.Items, r, opfPath)
+	resources, err := parseResources(pack.Manifest.Items, r, opfPath)
+	if err != nil {
+		return book.Book{}, err
+	}
 	tocItems, err := parseTOCItems(tocNCX.NavPoints, tocResource.Path)
 	if err != nil {
 		return book.Book{}, err
@@ -128,7 +132,11 @@ func readAll(file *zip.File) []byte {
 
 func parseTOCResource(items []opf.ManifestItem, r *zip.ReadCloser, opfPath string) (book.Resource, error) {
 	for _, item := range items {
-		itemPath := absPath(opfPath, item.Href)
+		decodedHref, err := url.QueryUnescape(item.Href)
+		if err != nil {
+			return book.Resource{}, err
+		}
+		itemPath := absPath(opfPath, decodedHref)
 		if item.MediaType == ncx.MediaType {
 			// This is the toc.ncx file, which we treat separately as metadata
 			return book.Resource{
@@ -142,10 +150,14 @@ func parseTOCResource(items []opf.ManifestItem, r *zip.ReadCloser, opfPath strin
 	return book.Resource{}, errors.New("missing toc.ncx")
 }
 
-func parseResources(items []opf.ManifestItem, r *zip.ReadCloser, opfPath string) []book.Resource {
+func parseResources(items []opf.ManifestItem, r *zip.ReadCloser, opfPath string) ([]book.Resource, error) {
 	var resources []book.Resource
 	for _, item := range items {
-		itemPath := absPath(opfPath, item.Href)
+		decodedHref, err := url.QueryUnescape(item.Href)
+		if err != nil {
+			return nil, err
+		}
+		itemPath := absPath(opfPath, decodedHref)
 		if item.MediaType == ncx.MediaType {
 			// This is the toc.ncx file, which we treat separately as metadata
 		} else if item.MediaType == opf.MediaType {
@@ -159,7 +171,7 @@ func parseResources(items []opf.ManifestItem, r *zip.ReadCloser, opfPath string)
 			})
 		}
 	}
-	return resources
+	return resources, nil
 }
 
 func parseSpineItems(itemRefs []opf.SpineItemRef) ([]book.SpineItem, error) {
@@ -192,11 +204,16 @@ func parseTOCItems(navPoints []ncx.NavPoint, tocPath string) ([]book.TOCItem, er
 		if err != nil {
 			return nil, err
 		}
+		decodedSrc, err := url.QueryUnescape(np.Content.Src)
+		if err != nil {
+			return nil, err
+		}
+		itemPath := absPath(tocPath, decodedSrc)
 		tocItems = append(tocItems, book.TOCItem{
 			ID:        np.ID,
 			PlayOrder: playOrder,
 			Label:     np.Label,
-			Href:      absPath(tocPath, np.Content.Src),
+			Href:      itemPath,
 			Children:  children,
 		})
 	}

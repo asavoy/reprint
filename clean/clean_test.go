@@ -111,3 +111,66 @@ func TestExtractInlineStyles(t *testing.T) {
 		t.Error("gotCSS != wantCSS:\n", diff)
 	}
 }
+
+func TestExtractImageStyles(t *testing.T) {
+	html := []byte(`<?xml version='1.0' encoding='utf-8'?>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	
+</head>
+<body>
+	<figure>
+		<img src="flourish-ultra-high-definition.png" />
+	</figure>
+	<p>Paragraph</p>
+</body>
+</html>`)
+	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(html))
+
+	ss := css.Parse(`
+figure {
+	width: 2em;
+    line-height: 1.5;
+}
+img {
+	width: 100%;
+}
+body {
+	width: 600px;
+}
+`)
+	gotSS := extractImageStyles(doc, ss)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotHTML, err := doc.Html()
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotCSS := cleanCSS.Render(gotSS)
+	wantHTML := `<!--?xml version='1.0' encoding='utf-8'?--><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US"><head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	
+</head>
+<body>
+	<figure class="reprint_images_0_0">
+		<img src="flourish-ultra-high-definition.png" class="reprint_images_0"/>
+	</figure>
+	<p>Paragraph</p>
+
+</body></html>`
+	wantCSS := `.reprint_images_0 {
+    width: 100%;
+}
+.reprint_images_0_0 {
+    width: 2em;
+}
+`
+	if diff := cmp.Diff(wantHTML, gotHTML); diff != "" {
+		t.Error("html got != want:\n", diff)
+	}
+	if diff := cmp.Diff(wantCSS, gotCSS); diff != "" {
+		t.Error("css got != want:\n", diff)
+	}
+}

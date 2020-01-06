@@ -124,6 +124,7 @@ func simpleStyles(rule *css.CSSRule) {
 		"background-color": true,
 		"color":            true,
 		"content":          true,
+		"display":          true,
 		"font-style":       true,
 		"font-weight":      true,
 		"font-decoration":  true,

@@ -61,6 +61,7 @@ func Clean(b *book.Book) error {
 
 func cleanPage(doc *goquery.Document, ss *css.CSSStyleSheet) {
 	extractInlineStyles(doc, ss)
+	imageSS := extractImageStyles(doc, ss)
 
 	cleanCSS.RemoveMediaRules(ss)
 	cleanCSS.RemoveKeyframeRules(ss)
@@ -83,19 +84,21 @@ func cleanPage(doc *goquery.Document, ss *css.CSSStyleSheet) {
 	cleanHTML.RemoveExcessBlockquotes(doc)
 
 	// Add styles directly into document
-	renderedStyles := cleanCSS.Render(ss)
-	styleNode := &html.Node{
-		Type: html.ElementNode,
-		Data: "style",
-		Attr: []html.Attribute{
-			{Key: "type", Val: "text/css"},
-		},
+	for _, s := range []*css.CSSStyleSheet{ss, imageSS} {
+		renderedStyles := cleanCSS.Render(s)
+		styleNode := &html.Node{
+			Type: html.ElementNode,
+			Data: "style",
+			Attr: []html.Attribute{
+				{Key: "type", Val: "text/css"},
+			},
+		}
+		styleNode.AppendChild(&html.Node{
+			Type: html.TextNode,
+			Data: renderedStyles,
+		})
+		doc.Find("head").AppendNodes(styleNode)
 	}
-	styleNode.AppendChild(&html.Node{
-		Type: html.TextNode,
-		Data: renderedStyles,
-	})
-	doc.Find("head").AppendNodes(styleNode)
 }
 
 func decomposePage(page book.Resource, b book.Book) (*goquery.Document, *css.CSSStyleSheet, []book.Resource, error) {
@@ -166,4 +169,74 @@ func extractInlineStyles(doc *goquery.Document, ss *css.CSSStyleSheet) {
 			Rules: nil,
 		})
 	})
+}
+
+var imageStyles = map[string]bool{
+	"content":       true,
+	"display":       true,
+	"height":        true,
+	"margin":        true,
+	"margin-bottom": true,
+	"margin-left":   true,
+	"margin-right":  true,
+	"margin-top":    true,
+	"text-align":    true,
+	"width":         true,
+}
+
+func extractImageStyles(doc *goquery.Document, ss *css.CSSStyleSheet) *css.CSSStyleSheet {
+	// TODO: comply with CSS specificity
+	imageSS := &css.CSSStyleSheet{}
+	doc.Find("img").Each(func(i int, s *goquery.Selection) {
+		// Find styles where the selector matches the img element
+		var styles []*css.CSSStyleDeclaration
+		for _, rule := range ss.CssRuleList {
+			if s.Is(rule.Style.SelectorText) {
+				for _, style := range rule.Style.Styles {
+					if _, ok := imageStyles[style.Property]; ok {
+						styles = append(styles, style)
+					}
+				}
+			}
+		}
+		if len(styles) > 0 {
+			className := fmt.Sprintf("reprint_images_%d", i)
+			s.AddClass(className)
+			imageSS.CssRuleList = append(imageSS.CssRuleList, &css.CSSRule{
+				Type: css.STYLE_RULE,
+				Style: css.CSSStyleRule{
+					SelectorText: "." + className,
+					Styles:       styles,
+				},
+				Rules: nil,
+			})
+		}
+		// Repeat for container only wrapping the img
+		s.Parent().Filter("figure, span").Each(func(j int, p *goquery.Selection) {
+			// Find styles where the selector matches the img element
+			var parentStyles []*css.CSSStyleDeclaration
+			for _, rule := range ss.CssRuleList {
+				if p.Is(rule.Style.SelectorText) {
+					for _, style := range rule.Style.Styles {
+						if _, ok := imageStyles[style.Property]; ok {
+							parentStyles = append(parentStyles, style)
+						}
+					}
+				}
+			}
+			if len(parentStyles) > 0 {
+				className := fmt.Sprintf("reprint_images_%d_%d", i, j)
+				p.AddClass(className)
+				imageSS.CssRuleList = append(imageSS.CssRuleList, &css.CSSRule{
+					Type: css.STYLE_RULE,
+					Style: css.CSSStyleRule{
+						SelectorText: "." + className,
+						Styles:       parentStyles,
+					},
+					Rules: nil,
+				})
+			}
+		})
+	})
+	return imageSS
 }

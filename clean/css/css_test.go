@@ -103,6 +103,9 @@ func TestKeepSimpleStyles(t *testing.T) {
 blockquote.code {
     white-space: pre;
 }
+.squeeze-amzn {
+    display: none;
+}
 `)
 	KeepSimpleStyles(ss)
 	got := Render(ss)
@@ -111,6 +114,9 @@ blockquote.code {
 }
 blockquote.code {
     white-space: pre;
+}
+.squeeze-amzn {
+    display: none;
 }
 `
 
