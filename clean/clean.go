@@ -21,6 +21,7 @@ func Clean(b *book.Book) error {
 
 	for _, resource := range b.Resources {
 		if resource.MediaType == "application/xhtml+xml" {
+			resource.Contents = []byte(cleanHTML.ConvertXHTMLToHTML(string(resource.Contents)))
 			doc, ss, ssResources, err := decomposePage(resource, *b)
 			if err != nil {
 				return err

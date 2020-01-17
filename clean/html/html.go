@@ -1,13 +1,23 @@
 package html
 
 import (
+	"regexp"
 	"strings"
-
-	"golang.org/x/net/html/atom"
 
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/net/html"
+	"golang.org/x/net/html/atom"
 )
+
+var selfClosingElementRegex = regexp.MustCompile(`<(\w+)(\b[^>]*?)?/>`)
+
+// Golang's HTML parser doesn't parse XHTML. Most of the time XHTML is stricter
+// for our purposes, except for handling of self-closing elements, where HTML 5
+// considers  self-closing non-void elements to be an error.
+func ConvertXHTMLToHTML(html string) string {
+	// Find self-closing elements and replace / with closing tag
+	return selfClosingElementRegex.ReplaceAllString(html, "<$1$2></$1>")
+}
 
 func RemoveEmptySpans(doc *goquery.Document) {
 	doc.Find("span").Each(func(_ int, s *goquery.Selection) {

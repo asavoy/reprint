@@ -8,6 +8,37 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func TestConvertXHTMLToHTML(t *testing.T) {
+	h := `
+<html>
+<body>
+<p><a id="part1" data='wowee'/>Part 1</p>
+<a/>
+<hr/>
+<br />
+<img
+  alt=""
+  src="image.jpg" />
+</body>
+</html>`
+	got := ConvertXHTMLToHTML(h)
+	want := `
+<html>
+<body>
+<p><a id="part1" data='wowee'></a>Part 1</p>
+<a></a>
+<hr></hr>
+<br ></br>
+<img
+  alt=""
+  src="image.jpg" ></img>
+</body>
+</html>`
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Error("got != want:\n", diff)
+	}
+}
+
 func TestRemoveEmptySpans(t *testing.T) {
 	h := `
 <html>
